@@ -8,10 +8,10 @@ static std::vector<std::string> string_array_tag_class = {
 	"Universal", "Application", "Context-Specific", "Private"
 };
 static std::vector<std::string> string_array_tag = {
-	"EOC", "BOOLEAN", "INTEGER", "BIT_STRING",
+	"BER", "BOOLEAN", "INTEGER", "BIT_STRING",
 	"OCTET_STRING","NULL", "OBJECT_IDENTIFIER", "OBJECT_DESCRIPTOR",
 	"EXTERNAL", "REAL", "ENUMERATED", "EMBEDDED_PDV",
-	"UTF8String", "RELATIVE_OID", "TIME", "Reserved","SEQUENCE",
+	"UTF8String", "RELATIVE_OID", "Reserved(14)", "Reserved(15)","SEQUENCE",
 	"SET", "NumericString", "PrintableString", "T61String",
 	"VideotexString","IA5String", "UTCTime", "GeneralizedTime",
 	"GraphicString", "VisibleString", "GeneralString", "UniversalString",
@@ -46,7 +46,7 @@ void intent_string(std::string & s, const unsigned intent)
 
 void tlv_parser::tlv::append_value_as_hex(std::string & s)
 {
-	char buffer[5] = "00";
+	char buffer[] = "00";
 	for (auto i = 0; i < value.size(); i++)
 	{
 		sprintf_s(buffer, "%02x", value[i]);
@@ -59,7 +59,7 @@ std::string tlv_parser::tlv::to_string(const unsigned intent)
 	std::string s;
 	intent_string(s, intent);
 
-	if (tag_class == universal)
+	if (tag_class == class_universal)
 	{
 		s.append(string_array_tag[tag]);
 		s.append(": Length " + std::to_string(length));
@@ -70,7 +70,7 @@ std::string tlv_parser::tlv::to_string(const unsigned intent)
 
 			switch (tag)
 			{
-			case OBJECT_IDENTIFIER:
+			case tag_object_identifier:
 				{
 					append_value_as_hex(s);
 					s.append(" => ");
@@ -103,7 +103,7 @@ std::string tlv_parser::tlv::to_string(const unsigned intent)
 				}
 				break;
 
-			case BOOLEAN:
+			case tag_boolean:
 				if (value[0] == 0)
 					s.append("FALSE");
 				else if (value[0] == 0xff || value[0] == 1)
@@ -112,12 +112,13 @@ std::string tlv_parser::tlv::to_string(const unsigned intent)
 					s.append("???");
 				break;
 
-			case NumericString:
-			case IA5String:
-			case UTF8String:
-			case PrintableString:
-			case UTCTime:
-			case GeneralizedTime:
+			case tag_numeric_string:
+			case tag_ia5_string:
+			case tag_utf8_string:
+			case tag_printable_string:
+			case tag_t61_string:
+			case tag_utc_time:
+			case tag_generalized_time:
 				{
 					append_value_as_hex(s);
 					s.append(" => ");
@@ -135,11 +136,11 @@ std::string tlv_parser::tlv::to_string(const unsigned intent)
 			}
 		}
 	}
-	else if (tag_class == context_specific)
+	else if (tag_class == class_context_specific)
 	{
-		//s.append(string_array_tag_class[tag_class] + ":");
-		//tag_constructed ? s.append("CONSTRUCTED:") : s.append("PRIMITIVE:");
-		s.append("[" + std::to_string(tag) + "], Length " + std::to_string(length));
+		s.append("[" + std::to_string(tag) + "]"
+			//+ string_array_tag_class[tag_class] + (tag_constructed ? ":CONSTRUCTED" : ":PRIMITIVE")
+			+ ", Length " + std::to_string(length));
 
 		if (!tag_constructed)
 		{
@@ -252,7 +253,7 @@ std::vector<tlv_parser::tlv *> tlv_parser::parse(unsigned char * buffer, const u
 	} while (index < max_len);
 
 	if (index != max_len)
-		throw std::exception("parse error");
+		throw std::exception("index != max_len");
 
 	for (auto tlv : result)
 	{
