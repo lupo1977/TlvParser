@@ -239,6 +239,8 @@ std::vector<tlv_parser::tlv *> tlv_parser::parse(unsigned char * buffer, const u
 		bool tag_constructed;
 		const auto tag = read_tag(buffer, index, tag_class, tag_constructed);
 		const auto length = read_length(buffer, index);
+		if (length == 0)
+			throw std::exception("Indefinite length encoding is not supported");
 
 		auto act_tlv = new tlv(tag, tag_class, tag_constructed, length, &buffer[++index]);
 		result.push_back(act_tlv);
