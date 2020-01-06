@@ -19,12 +19,13 @@ static std::vector<std::string> string_array_tag = {
 	"DATE_TIME", "DURATION", "OID_IRI", "RELATIVE_OID_IRI",
 };
 
-tlv_parser::tlv::tlv(const enum_tag t, const enum_tag_class t_class, const bool t_constructed, const unsigned long l, unsigned char * buffer)
+tlv_parser::tlv::tlv(const enum_tag t, const enum_tag_class t_class, const bool t_constructed, const bool indefinite, const unsigned long l, unsigned char * buffer)
 {
 	tag = t;
 	tag_class = t_class;
 	tag_constructed = t_constructed;
 
+	is_indefinite = indefinite;
 	length = l;
 
 	if (length > 0)
@@ -62,7 +63,11 @@ std::string tlv_parser::tlv::to_string(const unsigned intent)
 	if (tag_class == class_universal)
 	{
 		s.append(string_array_tag[tag]);
-		s.append(": Length " + std::to_string(length));
+
+		if (!is_indefinite)
+			s.append(": Length " + std::to_string(length));
+		else
+			s.append(": Length (indefinite) " + std::to_string(length));
 
 		if (!tag_constructed)
 		{
@@ -138,9 +143,14 @@ std::string tlv_parser::tlv::to_string(const unsigned intent)
 	}
 	else if (tag_class == class_context_specific)
 	{
-		s.append("[" + std::to_string(tag) + "]"
-			//+ string_array_tag_class[tag_class] + (tag_constructed ? ":CONSTRUCTED" : ":PRIMITIVE")
-			+ ", Length " + std::to_string(length));
+		if (!is_indefinite)
+			s.append("[" + std::to_string(tag) + "]"
+				//+ string_array_tag_class[tag_class] + (tag_constructed ? ":CONSTRUCTED" : ":PRIMITIVE")
+				+ ", Length " + std::to_string(length));
+		else
+			s.append("[" + std::to_string(tag) + "]"
+				//+ string_array_tag_class[tag_class] + (tag_constructed ? ":CONSTRUCTED" : ":PRIMITIVE")
+				+ ", Length (indefinite) " + std::to_string(length));
 
 		if (!tag_constructed)
 		{
@@ -153,7 +163,11 @@ std::string tlv_parser::tlv::to_string(const unsigned intent)
 		// Can this happen?
 		s.append(string_array_tag_class[tag_class] + ":");
 		tag_constructed ? s.append("CONSTRUCTED:") : s.append("PRIMITIVE:");
-		s.append("(TAG " + std::to_string(tag) + ", Length" + std::to_string(length) + ")");
+
+		if (!is_indefinite)
+			s.append("(TAG " + std::to_string(tag) + ", Length " + std::to_string(length) + ")");
+		else
+			s.append("(TAG " + std::to_string(tag) + ", Length (indefinite) " + std::to_string(length) + ")");
 
 		if (!tag_constructed)
 		{
@@ -227,6 +241,34 @@ void tlv_parser::parse(tlv * tlv)
 		tlv->childs = childs;
 }
 
+unsigned int tlv_parser::parse_indefinite_length(unsigned char* buffer)
+{
+	unsigned int index = 0;
+
+	while (true)
+	{
+		tlv::enum_tag_class tag_class;
+		bool tag_constructed;
+		const auto tag = read_tag(buffer, index, tag_class, tag_constructed);
+		const auto length = read_length(buffer, index);
+		
+		if (tag != tlv::tag_null && length == 0)
+		{
+			index += parse_indefinite_length(&buffer[++index]);
+		}
+		else
+			index += length + 1;
+
+		if (buffer[index] == 0 && buffer[index + 1] == 0)
+		{
+			index += 2;
+			break;
+		}
+	}
+
+	return index;
+}
+
 std::vector<tlv_parser::tlv *> tlv_parser::parse(unsigned char * buffer, const unsigned int max_len)
 {
 	unsigned int index = 0;
@@ -238,11 +280,20 @@ std::vector<tlv_parser::tlv *> tlv_parser::parse(unsigned char * buffer, const u
 		tlv::enum_tag_class tag_class;
 		bool tag_constructed;
 		const auto tag = read_tag(buffer, index, tag_class, tag_constructed);
-		const auto length = read_length(buffer, index);
-		if (length == 0)
-			throw std::exception("Indefinite length encoding is not supported");
+		auto length = read_length(buffer, index);
 
-		auto act_tlv = new tlv(tag, tag_class, tag_constructed, length, &buffer[++index]);
+		tlv* act_tlv;
+		if (tag != tlv::tag_null && length == 0)
+		{
+			//throw std::exception("Indefinite length encoding is not supported");
+			length = parse_indefinite_length(&buffer[++index]);
+			act_tlv = new tlv(tag, tag_class, tag_constructed, true, length - 2, &buffer[index]);
+		}
+		else
+		{
+			act_tlv = new tlv(tag, tag_class, tag_constructed, false, length, &buffer[++index]);
+		}
+		
 		result.push_back(act_tlv);
 
 		if (prev_tlv != nullptr)

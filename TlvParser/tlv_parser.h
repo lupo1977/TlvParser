@@ -65,10 +65,11 @@ public:
 		bool tag_constructed;
 
 		enum_tag tag;
+		bool is_indefinite;
 		unsigned long length;
 		std::vector<unsigned char> value{};
 
-		tlv(enum_tag t, enum_tag_class t_class, bool t_constructed, const unsigned long l, unsigned char * buffer);
+		tlv(enum_tag t, enum_tag_class t_class, bool t_constructed, bool indefinite, unsigned long l, unsigned char * buffer);
 		void append_value_as_hex(std::string& s);
 		std::string to_string(unsigned intent);
 
@@ -79,6 +80,7 @@ public:
 private:
 	static tlv::enum_tag read_tag(const unsigned char * buffer, unsigned int & index, tlv::enum_tag_class & tag_class, bool & tag_constructed);
 	static unsigned long read_length(const unsigned char * buffer, unsigned int & index);
+	static unsigned int parse_indefinite_length(unsigned char* buffer);
 	static void parse(tlv * tlv);
 
 public:
