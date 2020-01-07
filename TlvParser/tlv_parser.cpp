@@ -241,7 +241,7 @@ void tlv_parser::parse(tlv * tlv)
 		tlv->childs = childs;
 }
 
-unsigned int tlv_parser::parse_indefinite_length(unsigned char* buffer)
+unsigned int tlv_parser::calc_length(unsigned char* buffer)
 {
 	unsigned int index = 0;
 
@@ -254,7 +254,7 @@ unsigned int tlv_parser::parse_indefinite_length(unsigned char* buffer)
 		
 		if (tag != tlv::tag_null && length == 0)
 		{
-			index += parse_indefinite_length(&buffer[++index]);
+			index += calc_length(&buffer[++index]);
 		}
 		else
 			index += length + 1;
@@ -285,8 +285,7 @@ std::vector<tlv_parser::tlv *> tlv_parser::parse(unsigned char * buffer, const u
 		tlv* act_tlv;
 		if (tag != tlv::tag_null && length == 0)
 		{
-			//throw std::exception("Indefinite length encoding is not supported");
-			length = parse_indefinite_length(&buffer[++index]);
+			length = calc_length(&buffer[++index]);
 			act_tlv = new tlv(tag, tag_class, tag_constructed, true, length - 2, &buffer[index]);
 		}
 		else

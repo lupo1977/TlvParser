@@ -80,7 +80,7 @@ public:
 private:
 	static tlv::enum_tag read_tag(const unsigned char * buffer, unsigned int & index, tlv::enum_tag_class & tag_class, bool & tag_constructed);
 	static unsigned long read_length(const unsigned char * buffer, unsigned int & index);
-	static unsigned int parse_indefinite_length(unsigned char* buffer);
+	static unsigned int calc_length(unsigned char* buffer);
 	static void parse(tlv * tlv);
 
 public:
