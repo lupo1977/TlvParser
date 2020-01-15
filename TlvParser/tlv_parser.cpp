@@ -317,11 +317,5 @@ std::vector<tlv_parser::tlv*> tlv_parser::parse(unsigned char* buffer, const siz
 	if (index != max_len)
 		throw std::exception("index != max_len");
 
-	//for (auto tlv : result)
-	//{
-	//	if (tlv->tag_constructed)
-	//		parse(tlv);
-	//}
-
 	return result;
 }
