@@ -9,7 +9,7 @@ public:
 	{
 	public:
 
-		enum enum_tag_class
+		enum class enum_tag_class
 		{
 			class_universal = 0,
 			class_application = 1,
@@ -17,7 +17,7 @@ public:
 			class_private = 3
 		};
 
-		enum enum_tag
+		enum class enum_tag
 		{
 			tag_ber = 0,
 			tag_boolean = 1,
@@ -58,8 +58,8 @@ public:
 			tag_relative_oid_iri = 36,
 		};
 
-		tlv * next{};
-		std::vector<tlv *> childs{};
+		tlv* next{};
+		std::vector<tlv*> childs{};
 
 		enum_tag_class tag_class;
 		bool tag_constructed;
@@ -69,20 +69,20 @@ public:
 		unsigned long length;
 		std::vector<unsigned char> value{};
 
-		tlv(enum_tag t, enum_tag_class t_class, bool t_constructed, bool indefinite, unsigned long l, unsigned char * buffer);
+		tlv(enum_tag t, enum_tag_class t_class, bool t_constructed, bool indefinite, unsigned long l, unsigned char* buffer);
 		void append_value_as_hex(std::string& s);
 		std::string to_string(unsigned intent);
 
-		void print(tlv * root, unsigned intent) const;
+		void print(tlv* root, unsigned intent) const;
 		void print();
 	};
 
 private:
-	static tlv::enum_tag read_tag(const unsigned char * buffer, unsigned int & index, tlv::enum_tag_class & tag_class, bool & tag_constructed);
-	static unsigned long read_length(const unsigned char * buffer, unsigned int & index);
+	static tlv::enum_tag read_tag(const unsigned char* buffer, unsigned int& index, tlv::enum_tag_class& tag_class, bool& tag_constructed);
+	static unsigned long read_length(const unsigned char* buffer, unsigned int& index);
 	static unsigned int calc_length(unsigned char* buffer);
-	static void parse(tlv * tlv);
+	static void parse(tlv* tlv);
 
 public:
-	static std::vector<tlv *> parse(unsigned char * buffer, const unsigned int max_len);
+	static std::vector<tlv*> parse(unsigned char* buffer, size_t max_len);
 };
