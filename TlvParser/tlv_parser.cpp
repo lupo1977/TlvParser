@@ -282,18 +282,13 @@ std::vector<tlv_parser::tlv*> tlv_parser::parse(unsigned char* buffer, const siz
 		const auto tag = read_tag(buffer, index, tag_class, tag_constructed);
 		auto length = read_length(buffer, index);
 
-		tlv* act_tlv;
-
 		const auto length_indefinite = tag != tlv::enum_tag::tag_null && length == 0;
 		if (length_indefinite)
 			length = calc_length(&buffer[index]);
 
 		const auto apply_length = length_indefinite ? length - 2 : length;
 
-		if (tag_constructed)
-			act_tlv = new tlv(tag, tag_class, tag_constructed, length_indefinite, apply_length, nullptr);
-		else
-			act_tlv = new tlv(tag, tag_class, tag_constructed, length_indefinite, apply_length, &buffer[index]);
+		auto act_tlv = new tlv(tag, tag_class, tag_constructed, length_indefinite, apply_length, tag_constructed ? nullptr : &buffer[index]);
 
 		result.push_back(act_tlv);
 
